@@ -1,0 +1,26 @@
+﻿program teste
+/* declaracao de variaveis */
+	real : a,b;
+	integer : c, d;
+
+/*  corpo * principal / */
+begin 
+	read(a); {real}
+	read(c); {integer}
+  b := a * a + a;
+  d := 2*c + c;
+  if a > b then
+  	write(a)
+  else
+  	write(b)
+  $;
+  if d < c then
+  	write(d)
+  else
+  	write(c)
+  $;
+  while a > 1 do
+  	a:= a - 1
+  $
+  {aqui termina o programa}
+end.
