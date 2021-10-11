@@ -42,7 +42,10 @@ namespace compilador
         {
             token = lexico.nextToken();
             Console.WriteLine($"Token = {token}");
-            
+            if (token.type == TokenEnum.COMMENT)
+            {
+                getToken();
+            }
         }
 
 
@@ -200,7 +203,6 @@ namespace compilador
             {
                 verif_table_symbol();
                 typeExp = tableSymbol[token.term].type;
-                Console.WriteLine($"AAA - {token.term} = {tableSymbol[token.term].type}");
                 getToken();
                 if (token.type == TokenEnum.ASSIGN)
                 {
@@ -215,6 +217,7 @@ namespace compilador
                 condicao();
                 if (verifyToken("then"))
                 {
+                    typeExp = TokenEnum.NULL;
                     getToken();
                     comandos();
                     pfalsa();
@@ -222,6 +225,20 @@ namespace compilador
                    {
                        getToken();
                    }
+                }
+            }
+            else if (verifyToken("while"))
+            {
+                getToken();
+                condicao();
+                if (verifyToken("do"))
+                {
+                    getToken();
+                    comandos();
+                    if (token.term.Equals("$"))
+                    {
+                        getToken();
+                    }
                 }
             }
             else

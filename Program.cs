@@ -6,7 +6,7 @@ namespace compilador
     {
         static void Main(string[] args)
         {
-            int a = 1;
+            int a = 0;
             if (a == 0)
             {
                 Sintatico sintatico = new Sintatico("C:/Users/wilso/OneDrive/Documentos/GitHub/compiladores2/input.txt");
