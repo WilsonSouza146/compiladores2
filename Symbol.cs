@@ -2,12 +2,15 @@
 {
     class Symbol
     {
-        public string name { get; set; }
+        public string value { get; set; }
         public TokenEnum type { get; set; }
 
-        public Symbol(TokenEnum type, string name)
+        public int endRel { get; set; }
+
+        public Symbol(TokenEnum type, string value, int endRel)
         {
-            this.name = name;
+            this.value = value;
+            this.endRel = endRel;
             this.type = type;
         }
     }

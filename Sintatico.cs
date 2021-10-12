@@ -15,6 +15,8 @@ namespace compilador
         private Dictionary<string, Symbol> tableSymbol = new Dictionary<string, Symbol>();
         private TokenEnum type;
         private TokenEnum typeExp;
+        private List<string> C = new List<string>();
+        private int s = -1;
         public Sintatico(string path)
         {
             lexico = new LexScanner(path);
@@ -58,12 +60,19 @@ namespace compilador
                 getToken();
                 if (token.type == TokenEnum.IDENT)
                 {
+                    C = C.Append("INPP").ToList();
                     getToken();
                     corpo();
                     getToken();
                     if (!token.term.Equals("."))
                     {
                         throw new Exception($"Erro sintatico, esperado '.' e recebido {token}");
+                    }
+
+                    C = C.Append("PARA").ToList();
+                    foreach (string content in C)
+                    {
+                        Console.WriteLine(content);
                     }
                     token = null;
                 }
@@ -161,7 +170,8 @@ namespace compilador
                 }
                 else
                 {
-                    tableSymbol.Add(token.term, new Symbol(type, token.term));
+                    C = C.Append("ALME 1").ToList();
+                    tableSymbol.Add(token.term, new Symbol(type, token.term, ++s));
                 }
                 getToken();
                 mais_var(var_esq); 
@@ -203,11 +213,13 @@ namespace compilador
             {
                 verif_table_symbol();
                 typeExp = tableSymbol[token.term].type;
+                string value_ident = token.term;
                 getToken();
                 if (token.type == TokenEnum.ASSIGN)
                 {
                     getToken();
                     expressao();
+                    C = C.Append($"ARMZ {tableSymbol[value_ident].endRel}").ToList();
                 }
             }
             else if (verifyToken("if"))
@@ -313,14 +325,16 @@ namespace compilador
             {
                 verif_table_symbol();
                 Token id = token;
+                C = C.Append($"CRVL {tableSymbol[id.term].endRel}").ToList();
                 getToken();
-                return tableSymbol[id.term].name;
+                return tableSymbol[id.term].value;
                 
             }
             
             else if (token.type is TokenEnum.REAL or TokenEnum.INTEGER)
             {
                 Token id = token;
+                C = C.Append($"CRCT {id.term}").ToList();
                 getToken();
                 return id.term;
             }
@@ -348,6 +362,14 @@ namespace compilador
             
             if (token.term is "*" or "/")
             {
+                if (token.term == "*")
+                {
+                    C = C.Append("MULT").ToList();
+                }
+                else
+                {
+                    C = C.Append("DIVI").ToList();
+                }
                 op_mul();
                 string fator_dir = fator();
                 string mais_fatores_dir = mais_fatores(fator_dir);
@@ -365,6 +387,14 @@ namespace compilador
 
             if (token.term is "+" or "-")
             {
+                if (token.term == "+")
+                {
+                    C = C.Append("SOMA").ToList();
+                }
+                else
+                {
+                    C = C.Append("SUBT").ToList();
+                }
                 op_ad();
                 termo();
                 outros_termos();
@@ -415,7 +445,28 @@ namespace compilador
             if (token.type == TokenEnum.RELATIONAL)
             {
                 string op = token.term;
-                getToken();
+                switch (op)
+                {
+                    case "=":
+                        C = C.Append("CPIG").ToList();
+                        break;
+                    case "<>":
+                        C = C.Append("CDES").ToList();
+                        break;
+                    case ">":
+                        C = C.Append("CPMA").ToList();
+                        break;
+                    case "<":
+                        C = C.Append("CPME").ToList();
+                        break;
+                    case ">=":
+                        C = C.Append("CMAI").ToList();
+                        break;
+                    case "<=":
+                        C = C.Append("CPMI").ToList();
+                        break;
+                }
+                    getToken();
                 return op;
             }
 
@@ -448,6 +499,13 @@ namespace compilador
                     verif_table_symbol();
                     if (op == "read")
                     {
+                        C = C.Append("LEIT").ToList();
+                        C = C.Append($"ARMZ {tableSymbol[token.term].endRel}").ToList();
+                    }
+                    else
+                    {
+                        C = C.Append($"CRVL {tableSymbol[token.term].endRel}").ToList();
+                        C = C.Append("IMPR").ToList();
                     }
                     getToken();
                     if (!(token.term.Equals(")")))
