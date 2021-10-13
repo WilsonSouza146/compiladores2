@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -33,6 +34,8 @@ namespace compilador
             if (token == null)
             {
                 Console.WriteLine("Deu bom");
+                File.WriteAllLines("C:/Users/wilso/OneDrive/Documentos/GitHub/compiladores2/output.txt", C.ToArray());
+                
             }
             else
             {
@@ -43,7 +46,6 @@ namespace compilador
         private void getToken()
         {
             token = lexico.nextToken();
-            Console.WriteLine($"Token = {token}");
             if (token.type == TokenEnum.COMMENT)
             {
                 getToken();
@@ -231,22 +233,58 @@ namespace compilador
                 {
                     typeExp = TokenEnum.NULL;
                     getToken();
+                    
+                    int  DSVF_POS_ToReplace = C.Count;
+                    C = C.Append("DSVF DSVF_POS_ToReplace").ToList();
+                    
                     comandos();
+
+                    int  DSVI_POS_ToReplace = C.Count;
+                    C = C.Append("DSVI DSVI_POS_ToReplace").ToList();
+                    
+                    int posElse = C.Count;
                     pfalsa();
-                   if (token.term.Equals("$"))
-                   {
-                       getToken();
-                   }
+
+                    // sem else
+                    if (C.Count == posElse)
+                    {
+                        C.RemoveAt(C.Count - 1);
+                        C[DSVF_POS_ToReplace] = C[DSVF_POS_ToReplace]
+                            .Replace("DSVF_POS_ToReplace", C.Count.ToString());
+                    }
+                    
+                    // com else
+                    if (C.Count > posElse)
+                    {
+                        C[DSVF_POS_ToReplace] = C[DSVF_POS_ToReplace]
+                            .Replace("DSVF_POS_ToReplace", posElse.ToString());
+                        C[DSVI_POS_ToReplace] = C[DSVI_POS_ToReplace]
+                            .Replace("DSVI_POS_ToReplace", C.Count.ToString());
+                    } 
+                    
+                    if (token.term.Equals("$"))
+                    {
+                        getToken();
+                    }
                 }
             }
             else if (verifyToken("while"))
             {
                 getToken();
+                int Condition_POS_ToReplace = C.Count;
                 condicao();
+
+                int DSVF_POS_ToReplace = C.Count;
+                C = C.Append("DSVF DSVF_POS_ToReplace").ToList();
                 if (verifyToken("do"))
                 {
                     getToken();
                     comandos();
+
+                    C = C.Append($"DSVI {Condition_POS_ToReplace}").ToList();
+
+                    C[DSVF_POS_ToReplace] =
+                        C[DSVF_POS_ToReplace].Replace("DSVF_POS_ToReplace", C.Count.ToString());
                     if (token.term.Equals("$"))
                     {
                         getToken();
@@ -311,6 +349,7 @@ namespace compilador
             if (token.term.Equals("-"))
             {
                 string op_un_dir = token.term;
+                C = C.Append("INVE").ToList();
                 getToken();
                 return op_un_dir;
             }
@@ -362,17 +401,11 @@ namespace compilador
             
             if (token.term is "*" or "/")
             {
-                if (token.term == "*")
-                {
-                    C = C.Append("MULT").ToList();
-                }
-                else
-                {
-                    C = C.Append("DIVI").ToList();
-                }
+                var op_mais_fatores = token.term;
                 op_mul();
-                string fator_dir = fator();
-                string mais_fatores_dir = mais_fatores(fator_dir);
+                var fator_dir = fator();
+                C = op_mais_fatores == "*" ? C.Append("MULT").ToList() : C.Append("DIVI").ToList();
+                var mais_fatores_dir = mais_fatores(fator_dir);
                 return mais_fatores_dir;
             }
             else
@@ -385,21 +418,12 @@ namespace compilador
         {
             Console.WriteLine("outros_termos");
 
-            if (token.term is "+" or "-")
-            {
-                if (token.term == "+")
-                {
-                    C = C.Append("SOMA").ToList();
-                }
-                else
-                {
-                    C = C.Append("SUBT").ToList();
-                }
-                op_ad();
-                termo();
-                outros_termos();
-                
-            }
+            if (token.term is not ("+" or "-")) return;
+            var op = token.term;
+            op_ad();
+            termo();
+            C = op == "+" ? C.Append("SOMA").ToList() : C.Append("SUBT").ToList();
+            outros_termos();
         }
 
         private void op_mul()
@@ -435,58 +459,40 @@ namespace compilador
         private void condicao()
         {
             expressao();
-            relacao();
+            var op_relational = relacao();
             expressao();
+            C = op_relational switch
+            {
+                "=" => C.Append("CPIG").ToList(),
+                "<>" => C.Append("CDES").ToList(),
+                ">" => C.Append("CPMA").ToList(),
+                "<" => C.Append("CPME").ToList(),
+                ">=" => C.Append("CMAI").ToList(),
+                "<=" => C.Append("CPMI").ToList(),
+                _ => C
+            };
         }
 
         private string relacao()
         {
             Console.WriteLine("relacao");
-            if (token.type == TokenEnum.RELATIONAL)
-            {
-                string op = token.term;
-                switch (op)
-                {
-                    case "=":
-                        C = C.Append("CPIG").ToList();
-                        break;
-                    case "<>":
-                        C = C.Append("CDES").ToList();
-                        break;
-                    case ">":
-                        C = C.Append("CPMA").ToList();
-                        break;
-                    case "<":
-                        C = C.Append("CPME").ToList();
-                        break;
-                    case ">=":
-                        C = C.Append("CMAI").ToList();
-                        break;
-                    case "<=":
-                        C = C.Append("CPMI").ToList();
-                        break;
-                }
-                    getToken();
-                return op;
-            }
+            if (token.type != TokenEnum.RELATIONAL) throw new Exception("Esperado um TOKEN relacional");
+            var op = token.term;
+            getToken();
+            return op;
 
-            return "";
         }
 
         private void pfalsa()
         {
             Console.WriteLine("pfalsa");
-            if (!token.term.Equals("$"))
-            {
-                if (verifyToken("else"))
-                {
-                    getToken();
-                    comandos();
-                    
-                }
-            }
+            if (token.term.Equals("$")) return;
+            if (!verifyToken("else")) return;
+            getToken();
+            comandos();
         }
 
+        // Verifica se os parenteses estao sendo usados de maneira correta
         private void verif_parenteses(string op)
         {
             Console.WriteLine("verif_parenteses");
@@ -525,6 +531,7 @@ namespace compilador
             }
         }
         
+        // Verifica se a variavel foi declarada
         private void verif_table_symbol()
         {
             if (!tableSymbol.ContainsKey(token.term))
@@ -532,7 +539,8 @@ namespace compilador
                 throw new Exception($"Erro semantico, variavel '{token}' sendo usada e nao foi declarada"); 
             }
         }
-
+        
+        // Verifica se a variavel e a expressao sao do mesmo tipo
         private void verif_type()
         {
             Console.WriteLine("verify_type");
